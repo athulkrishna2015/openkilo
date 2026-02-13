@@ -1,0 +1,56 @@
+{
+  "name": "openkilo",
+  "version": "1.0.0",
+  "description": "OpenKilo - Access 40+ free AI models through Kilo Gateway. Zero-config, no API key required for free models.",
+  "author": "Angan Samadder",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "kilo",
+    "kilo-gateway",
+    "ai",
+    "llm",
+    "free-models",
+    "openrouter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnganSamadder/openkilo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnganSamadder/openkilo/issues"
+  },
+  "homepage": "https://github.com/AnganSamadder/openkilo#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.0.85"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.10",
+    "@types/bun": "^1.2.4",
+    "@types/node": "^25.0.10",
+    "typescript": "^5.7.3"
+  }
+}

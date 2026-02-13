@@ -1,0 +1,12 @@
+src/
+*.ts
+!dist/*.d.ts
+tsconfig.json
+tsconfig.build.json
+biome.json
+AGENTS.md
+.github/
+.gitignore
+*.log
+.DS_Store
+bun.lock
