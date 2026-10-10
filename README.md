@@ -4,11 +4,13 @@
 [![npm downloads](https://img.shields.io/npm/dt/openkilo)](https://www.npmjs.com/package/openkilo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Access **40+ free AI models** through Kilo Gateway. Zero-config, no API key required for free models.
+> **Known issue: OpenKilo is currently not working with OpenCode 2.0.19.** In a local verification, OpenCode did not load the configured OpenKilo plugin and no `openkilo` provider or models appeared. The current release should not be installed with the expectation that it will expose models. This README will be updated when compatibility is restored.
+
+OpenKilo is intended to provide access to free AI models through Kilo Gateway, without requiring an API key for free models. That functionality is currently unavailable in the tested OpenCode version.
 
 ## Installation
 
-### 🤖 Let an LLM do it (Recommended)
+### 🤖 Let an LLM do it
 
 Paste this into any LLM agent (OpenCode, Claude Code, Cursor, etc.):
 
@@ -19,13 +21,13 @@ Install the openkilo plugin by following: https://raw.githubusercontent.com/Anga
 <details>
 <summary><b>Instructions for LLM Agents</b></summary>
 
-To install this plugin, please perform the following steps for the user:
+**Do not install OpenKilo for use with OpenCode 2.0.19 yet.** It currently fails to load as a provider plugin in that version. The following instructions describe the intended setup only and will not resolve the known issue:
 
 1. **Install the NPM package globally:**
    ```bash
    npm install -g openkilo
    ```
-   *Note: This plugin requires no additional setup - free models work instantly.*
+   *Note: Installation alone does not make models available in OpenCode 2.0.19.*
 
 2. **Configure OpenCode:**
    Add `"openkilo"` to the `plugin` array in the user's config file (usually `~/.config/opencode/opencode.json`).
@@ -39,7 +41,7 @@ To install this plugin, please perform the following steps for the user:
    ```
 
 3. **Verify & Finalize:**
-   - Tell the user: **"Installation complete! Restart OpenCode and select any model under the 'OpenKilo' provider to start using free AI models instantly."**
+   - Do not tell the user installation succeeded or that OpenKilo models are available until this issue is fixed and verified.
 
 </details>
 
@@ -60,12 +62,12 @@ To install this plugin, please perform the following steps for the user:
    }
    ```
 
-3. **Use Free Models:**
-   Restart OpenCode and select any model under the **OpenKilo** provider. No API key needed!
+3. **Current status:**
+   OpenCode 2.0.19 does not load the configured OpenKilo provider in our verification. Models are not available; restarting does not fix this currently.
 
 ## ✨ Features
 
-- **Zero-config free models**: 40+ free models available instantly without authentication
+- **Free models (intended)**: 40+ free models without authentication (currently unavailable; see known issue above)
 - **Kilo Gateway**: Uses Kilo's free OpenRouter-compatible gateway at `api.kilo.ai`
 - **Dual authentication**: OAuth browser flow or API key for 350+ paid models
 - **Auto-refresh**: Model registry updates automatically on OpenCode startup
@@ -117,6 +119,10 @@ This opens a browser for OAuth authentication. Alternatively, use an API key:
 | `~/.cache/openkilo/gateway-models.json` | Model registry cache |
 
 ## ❓ Troubleshooting
+
+### OpenKilo Provider or Models Are Missing
+
+This is a known compatibility issue in the current release with OpenCode 2.0.19. We verified that the configured plugin did not load and the `openkilo` provider was absent. Restarting OpenCode and refreshing the model registry do not fix a plugin that OpenCode does not load. Please wait for a compatibility fix before relying on OpenKilo.
 
 ### Models Not Showing
 1. Check OpenCode config has `"openkilo"` in the `plugin` array
