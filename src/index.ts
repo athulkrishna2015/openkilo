@@ -1,50 +1,62 @@
 import { Model, Plugin, Provider } from '@opencode/plugin';
 import { loadAuth } from './auth/storage.js';
-import { getFreeModels, getModels } from './registry.js';
+import { getAllModels, getFreeModels, getModels } from './registry.js';
+import { kiloLoginTool, kiloLogoutTool, kiloStatusTool } from './tools/login.js';
+import { kiloModelsTool, kiloRefreshTool } from './tools/refresh.js';
 
 const PROVIDER_ID = Provider.ID.make('openkilo');
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const KILO_BASE_URL = 'https://api.kilo.ai/api/openrouter/';
 
 function toModelDefinitions(models: Awaited<ReturnType<typeof getModels>>) {
-  return getFreeModels(models).map((source) => {
-    const modelID = Model.ID.make(source.id);
-    const modalities = (values?: string[]) =>
-      (values ?? ['text']).filter((value): value is 'text' | 'audio' | 'image' | 'video' | 'pdf' =>
-        ['text', 'audio', 'image', 'video', 'pdf'].includes(value),
-      );
-
+  return models.map((source) => {
+    const model = Model.Info.default(PROVIDER_ID, Model.ID.make(source.id));
     return {
-      ...Model.Info.default(PROVIDER_ID, modelID),
+      ...model,
+      modelID: model.id,
       name: source.name || source.id,
       limit: {
         context: source.context_length || source.top_provider?.context_length || 128_000,
         output: source.top_provider?.max_completion_tokens || 8_192,
       },
       capabilities: {
+        ...Model.Capabilities.default(),
         tools: source.supported_parameters?.includes('tools') ?? true,
-        input: modalities(source.architecture?.input_modalities),
-        output: modalities(source.architecture?.output_modalities),
+        input: (source.architecture?.input_modalities ?? ['text']).filter(
+          (value): value is 'text' | 'image' => value === 'text' || value === 'image',
+        ),
+        output: (source.architecture?.output_modalities ?? ['text']).filter(
+          (value): value is 'text' | 'image' => value === 'text' || value === 'image',
+        ),
       },
     };
   });
 }
 
+async function resolveApiKey(): Promise<string> {
+  const auth = await loadAuth();
+  if (auth.type === 'api-key') return auth.apiKey;
+  if (auth.type === 'oauth') return auth.accessToken;
+  return 'anonymous';
+}
+
 export default Plugin.define({
   id: 'openkilo',
   async setup(ctx) {
-    let models = toModelDefinitions(await getModels(true));
-    const auth = await loadAuth();
+    const loadDefinitions = async () => {
+      const all = await getModels(false);
+      const auth = await loadAuth();
+      return toModelDefinitions(auth.type !== 'none' ? getAllModels(all) : getFreeModels(all));
+    };
+
+    const models = await loadDefinitions();
+    const apiKey = await resolveApiKey();
     await ctx.provider.transform((editor) => {
       editor.add({
         info: {
           ...Provider.Info.empty(PROVIDER_ID),
           name: 'OpenKilo',
-          activation: 'enabled',
-          package: '@opencode/ai/providers/openai-compatible',
-          settings: {
-            baseURL: 'https://api.kilo.ai/api/gateway',
-            apiKey: auth.type === 'api-key' ? auth.apiKey : 'anonymous',
-          },
+          package: '@openrouter/ai-sdk-provider',
+          settings: { baseURL: KILO_BASE_URL, apiKey },
         },
         models,
       });
@@ -52,18 +64,23 @@ export default Plugin.define({
 
     const refresh = async () => {
       try {
-        models = toModelDefinitions(await getModels(true));
-        await ctx.provider.transform((editor) => {
-          editor.models.set(PROVIDER_ID, models);
-        });
+        const updated = toModelDefinitions(await getModels(true));
+        await ctx.provider.transform((editor) => editor.models.set(PROVIDER_ID, updated));
         await ctx.provider.reload();
-        console.info(`[OpenKilo] Refreshed ${models.length} free Kilo models`);
       } catch (error) {
-        console.error('[OpenKilo] Model refresh failed; keeping last available catalog:', error);
+        console.error(`OpenKilo model refresh failed: ${String(error)}`);
       }
     };
-    const timer = setInterval(() => void refresh(), REFRESH_INTERVAL_MS);
+    const timer = setInterval(() => void refresh(), 5 * 60 * 1000);
     timer.unref?.();
+
+    await ctx.tool.transform((editor) => {
+      editor.add({ ...kiloLoginTool, name: 'kilo_login' });
+      editor.add({ ...kiloLogoutTool, name: 'kilo_logout' });
+      editor.add({ ...kiloStatusTool, name: 'kilo_status' });
+      editor.add({ ...kiloRefreshTool, name: 'kilo_refresh' });
+      editor.add({ ...kiloModelsTool, name: 'kilo_models' });
+    });
     return () => clearInterval(timer);
   },
 });
