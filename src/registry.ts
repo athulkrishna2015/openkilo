@@ -2,10 +2,10 @@ import fs from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-const KILO_GATEWAY_MODELS_URL = 'https://api.kilo.ai/api/openrouter/models';
+const KILO_GATEWAY_MODELS_URL = 'https://api.kilo.ai/api/gateway/models';
 const OPENKILO_CACHE_DIR = path.join(homedir(), '.cache', 'openkilo');
 const OPENKILO_CACHE_FILE = path.join(OPENKILO_CACHE_DIR, 'gateway-models.json');
-const CACHE_TTL_MS = 1000 * 60 * 60;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export interface KiloGatewayModel {
   id: string;
@@ -52,11 +52,12 @@ function isFreeModel(model: KiloGatewayModel): boolean {
 
 export async function fetchKiloGatewayModels(): Promise<KiloGatewayModel[]> {
   try {
-    const response = await fetch(KILO_GATEWAY_MODELS_URL);
+    const response = await fetch(KILO_GATEWAY_MODELS_URL, { signal: AbortSignal.timeout(15_000) });
     if (!response.ok) {
       throw new Error(`Failed to fetch Kilo Gateway models: ${response.status}`);
     }
     const data = (await response.json()) as KiloGatewayModelsResponse;
+    if (!Array.isArray(data.data)) throw new Error('Kilo Gateway returned an invalid model catalog');
 
     await fs.mkdir(OPENKILO_CACHE_DIR, { recursive: true });
     await fs.writeFile(
@@ -80,10 +81,7 @@ async function loadCachedModels(): Promise<KiloGatewayModel[] | null> {
     const content = await fs.readFile(OPENKILO_CACHE_FILE, 'utf-8');
     const cached = JSON.parse(content) as { timestamp: number; data: KiloGatewayModel[] };
 
-    if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
-      return null;
-    }
-
+    // Cached data is also a fallback if the gateway is temporarily unreachable.
     return cached.data;
   } catch {
     return null;

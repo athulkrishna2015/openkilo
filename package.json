@@ -1,7 +1,7 @@
 {
   "name": "openkilo",
   "version": "1.0.0",
-  "description": "OpenKilo - Access 40+ free AI models through Kilo Gateway. Zero-config, no API key required for free models.",
+  "description": "OpenKilo - Kilo Gateway free models for OpenCode V2 with automatic catalog refresh.",
   "author": "Angan Samadder",
   "license": "MIT",
   "type": "module",
@@ -45,7 +45,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "1.0.85"
+    "@opencode/plugin": "^2.0.19"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",
