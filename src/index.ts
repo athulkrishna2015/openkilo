@@ -1,4 +1,5 @@
 import { Model, Plugin, Provider } from '@opencode/plugin';
+import { loadAuth } from './auth/storage.js';
 import { getFreeModels, getModels } from './registry.js';
 
 const PROVIDER_ID = Provider.ID.make('openkilo');
@@ -32,6 +33,7 @@ export default Plugin.define({
   id: 'openkilo',
   async setup(ctx) {
     let models = toModelDefinitions(await getModels(true));
+    const auth = await loadAuth();
     await ctx.provider.transform((editor) => {
       editor.add({
         info: {
@@ -41,7 +43,7 @@ export default Plugin.define({
           package: '@opencode/ai/providers/openai-compatible',
           settings: {
             baseURL: 'https://api.kilo.ai/api/gateway',
-            apiKey: 'anonymous',
+            apiKey: auth.type === 'api-key' ? auth.apiKey : 'anonymous',
           },
         },
         models,
@@ -51,6 +53,9 @@ export default Plugin.define({
     const refresh = async () => {
       try {
         models = toModelDefinitions(await getModels(true));
+        await ctx.provider.transform((editor) => {
+          editor.models.set(PROVIDER_ID, models);
+        });
         await ctx.provider.reload();
         console.info(`[OpenKilo] Refreshed ${models.length} free Kilo models`);
       } catch (error) {
